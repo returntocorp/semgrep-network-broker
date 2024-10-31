@@ -37,7 +37,9 @@ func (peer WireguardPeer) WriteTo(sb io.StringWriter) {
 func (base WireguardBase) GenerateConfig() string {
 	sb := strings.Builder{}
 
-	sb.WriteString(fmt.Sprintf("private_key=%s\n", hex.EncodeToString(base.PrivateKey)))
+	// Why take a slice of the private key? because https://github.com/semgrep/semgrep-network-broker/pull/85/ introduced special concatenated keypairs.
+	// This ended up being a bad idea, but we need to guard against folks who might have generated one of these in the past.
+	sb.WriteString(fmt.Sprintf("private_key=%s\n", hex.EncodeToString(base.PrivateKey[0:device.NoisePrivateKeySize])))
 	sb.WriteString(fmt.Sprintf("listen_port=%d\n", base.ListenPort))
 
 	for i := range base.Peers {
