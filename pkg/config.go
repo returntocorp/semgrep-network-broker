@@ -367,13 +367,17 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 			key, value := record[0:i], record[i+1:]
 			switch key {
 			case "wireguardAllowedIps":
-				peer.AllowedIps = value
-			case "wireguardPublicKey":
-				decoded_value, err := base64.StdEncoding.DecodeString(value)
-				if err != nil {
-					return nil, fmt.Errorf("failed to decode pubkey %v: %w", value, err)
+				if peer.AllowedIps == "" {
+					peer.AllowedIps = value
 				}
-				peer.PublicKey = Base64String(decoded_value)
+			case "wireguardPublicKey":
+				if peer.PublicKey == nil {
+					decoded_value, err := base64.StdEncoding.DecodeString(value)
+					if err != nil {
+						return nil, fmt.Errorf("failed to decode pubkey %v: %w", value, err)
+					}
+					peer.PublicKey = Base64String(decoded_value)
+				}
 			default:
 				logger.WithField("record_key", key).WithField("record_value", value).Warn("txt_lookup.unrecognized_key")
 			}
