@@ -76,13 +76,14 @@ type WireguardPeer struct {
 }
 
 type WireguardBase struct {
-	LocalAddress string                `mapstructure:"localAddress" json:"localAddress" validate:"format=ip"`
-	Dns          []string              `mapstructure:"dns" json:"dns" validate:"empty=true > format=ip"`
-	Mtu          int                   `mapstructure:"mtu" json:"mtu" validate:"gte=0" default:"1420"`
-	PrivateKey   SensitiveBase64String `mapstructure:"privateKey" json:"privateKey" validate:"empty=false"`
-	ListenPort   int                   `mapstructure:"listenPort" json:"listenPort" validate:"gte=0"`
-	Peers        []WireguardPeer       `mapstructure:"peers" json:"peers" validate:"empty=false"`
-	Verbose      bool                  `mapstructure:"verbose" json:"verbose"`
+	LocalAddress                 string                `mapstructure:"localAddress" json:"localAddress" validate:"format=ip"`
+	Dns                          []string              `mapstructure:"dns" json:"dns" validate:"empty=true > format=ip"`
+	Mtu                          int                   `mapstructure:"mtu" json:"mtu" validate:"gte=0" default:"1420"`
+	PrivateKey                   SensitiveBase64String `mapstructure:"privateKey" json:"privateKey" validate:"empty=false"`
+	ListenPort                   int                   `mapstructure:"listenPort" json:"listenPort" validate:"gte=0"`
+	Peers                        []WireguardPeer       `mapstructure:"peers" json:"peers" validate:"empty=false"`
+	Verbose                      bool                  `mapstructure:"verbose" json:"verbose"`
+	DisablePeerSettingsDnsLookup bool                  `mapstructure:"disablePeerSettingsDnsLookup" json:"disablePeerSettingsDnsLookup"`
 }
 
 type BitTester interface {
@@ -339,47 +340,49 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 	}
 
 	// Step 4: Resolve TXT record(s) of wireguard peers, fill in config values if not set in a config file
-	for i := range config.Inbound.Wireguard.Peers {
-		peer := &config.Inbound.Wireguard.Peers[i]
+	if !config.Inbound.Wireguard.DisablePeerSettingsDnsLookup {
+		for i := range config.Inbound.Wireguard.Peers {
+			peer := &config.Inbound.Wireguard.Peers[i]
 
-		endpoint := peer.Endpoint
-		if i := strings.Index(endpoint, ":"); i >= 0 {
-			endpoint = endpoint[0:i]
-		}
-
-		logger := log.WithField("endpoint", endpoint)
-
-		records, err := net.LookupTXT(endpoint)
-		if err != nil {
-			var dnsError *net.DNSError
-			if errors.As(err, &dnsError) && dnsError.IsNotFound {
-				logger.WithError(dnsError).Warn("txt_lookup.failed")
-			} else {
-				return nil, fmt.Errorf("failed to lookup TXT records for %v: %w", endpoint, err)
+			endpoint := peer.Endpoint
+			if i := strings.Index(endpoint, ":"); i >= 0 {
+				endpoint = endpoint[0:i]
 			}
-		}
 
-		for _, record := range records {
-			i := strings.Index(record, "=")
-			if i < 0 {
-				continue // skip any records that arent key=value formatted
-			}
-			key, value := record[0:i], record[i+1:]
-			switch key {
-			case "wireguardAllowedIps":
-				if peer.AllowedIps == "" {
-					peer.AllowedIps = value
+			logger := log.WithField("endpoint", endpoint)
+
+			records, err := net.LookupTXT(endpoint)
+			if err != nil {
+				var dnsError *net.DNSError
+				if errors.As(err, &dnsError) && dnsError.IsNotFound {
+					logger.WithError(dnsError).Warn("txt_lookup.failed")
+				} else {
+					return nil, fmt.Errorf("failed to lookup TXT records for %v: %w", endpoint, err)
 				}
-			case "wireguardPublicKey":
-				if peer.PublicKey == nil {
-					decoded_value, err := base64.StdEncoding.DecodeString(value)
-					if err != nil {
-						return nil, fmt.Errorf("failed to decode pubkey %v: %w", value, err)
+			}
+
+			for _, record := range records {
+				i := strings.Index(record, "=")
+				if i < 0 {
+					continue // skip any records that arent key=value formatted
+				}
+				key, value := record[0:i], record[i+1:]
+				switch key {
+				case "wireguardAllowedIps":
+					if peer.AllowedIps == "" {
+						peer.AllowedIps = value
 					}
-					peer.PublicKey = Base64String(decoded_value)
+				case "wireguardPublicKey":
+					if peer.PublicKey == nil {
+						decoded_value, err := base64.StdEncoding.DecodeString(value)
+						if err != nil {
+							return nil, fmt.Errorf("failed to decode pubkey %v: %w", value, err)
+						}
+						peer.PublicKey = Base64String(decoded_value)
+					}
+				default:
+					logger.WithField("record_key", key).WithField("record_value", value).Warn("txt_lookup.unrecognized_key")
 				}
-			default:
-				logger.WithField("record_key", key).WithField("record_value", value).Warn("txt_lookup.unrecognized_key")
 			}
 		}
 	}
