@@ -380,6 +380,10 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 						}
 						peer.PublicKey = Base64String(decoded_value)
 					}
+				case "heartbeat":
+					if config.Inbound.Heartbeat.URL == "" {
+						config.Inbound.Heartbeat.URL = value
+					}
 				default:
 					logger.WithField("record_key", key).WithField("record_value", value).Warn("txt_lookup.unrecognized_key")
 				}
