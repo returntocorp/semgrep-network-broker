@@ -349,6 +349,10 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 				endpoint = endpoint[0:i]
 			}
 
+			if net.ParseIP(endpoint) != nil {
+				continue // cant look up TXT record for IPs
+			}
+
 			logger := log.WithField("endpoint", endpoint)
 
 			records, err := net.LookupTXT(endpoint)
