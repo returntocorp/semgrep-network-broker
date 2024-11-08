@@ -3,13 +3,17 @@ package pkg
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"reflect"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/mcuadros/go-defaults"
 	"github.com/mitchellh/mapstructure"
@@ -72,13 +76,14 @@ type WireguardPeer struct {
 }
 
 type WireguardBase struct {
-	LocalAddress string                `mapstructure:"localAddress" json:"localAddress" validate:"format=ip"`
-	Dns          []string              `mapstructure:"dns" json:"dns" validate:"empty=true > format=ip"`
-	Mtu          int                   `mapstructure:"mtu" json:"mtu" validate:"gte=0" default:"1420"`
-	PrivateKey   SensitiveBase64String `mapstructure:"privateKey" json:"privateKey" validate:"empty=false"`
-	ListenPort   int                   `mapstructure:"listenPort" json:"listenPort" validate:"gte=0"`
-	Peers        []WireguardPeer       `mapstructure:"peers" json:"peers" validate:"empty=false"`
-	Verbose      bool                  `mapstructure:"verbose" json:"verbose"`
+	LocalAddress                 string                `mapstructure:"localAddress" json:"localAddress" validate:"format=ip"`
+	Dns                          []string              `mapstructure:"dns" json:"dns" validate:"empty=true > format=ip"`
+	Mtu                          int                   `mapstructure:"mtu" json:"mtu" validate:"gte=0" default:"1420"`
+	PrivateKey                   SensitiveBase64String `mapstructure:"privateKey" json:"privateKey" validate:"empty=false"`
+	ListenPort                   int                   `mapstructure:"listenPort" json:"listenPort" validate:"gte=0"`
+	Peers                        []WireguardPeer       `mapstructure:"peers" json:"peers" validate:"empty=false"`
+	Verbose                      bool                  `mapstructure:"verbose" json:"verbose"`
+	DisablePeerSettingsDnsLookup bool                  `mapstructure:"disablePeerSettingsDnsLookup" json:"disablePeerSettingsDnsLookup"`
 }
 
 type BitTester interface {
@@ -265,6 +270,7 @@ type Config struct {
 func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 	config := new(Config)
 
+	// Step 1: Apply config values encoded in broker token (if provided)
 	tokenString, err := LoadTokenFromEnv()
 	if err != nil {
 		return config, fmt.Errorf("failed to load token: %v", err)
@@ -280,6 +286,8 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 		config.Inbound.Wireguard.PrivateKey = token.WireguardCredential.PrivateKey
 	}
 
+	// Step 2: Apply config values from semgrep.dev/api/broker/{deployment_id}/default-config, if a deployment ID is provided
+	// NOTE: we will be phasing this out in favor of retrieving default configs from the broker gateway
 	if deploymentId > 0 {
 		hostname := os.Getenv("SEMGREP_HOSTNAME")
 		if hostname == "" {
@@ -318,6 +326,7 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 		}
 	}
 
+	// Step 3: Load config files passed via command line
 	for i := range configFiles {
 		viper.SetConfigFile(configFiles[i])
 		if err := viper.MergeInConfig(); err != nil {
@@ -329,6 +338,64 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 	}); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %v", err)
 	}
+
+	// Step 4: Resolve TXT record(s) of wireguard peers, fill in config values if not set in a config file
+	if !config.Inbound.Wireguard.DisablePeerSettingsDnsLookup {
+		for i := range config.Inbound.Wireguard.Peers {
+			peer := &config.Inbound.Wireguard.Peers[i]
+
+			endpoint := peer.Endpoint
+			if i := strings.Index(endpoint, ":"); i >= 0 {
+				endpoint = endpoint[0:i]
+			}
+
+			if net.ParseIP(endpoint) != nil {
+				continue // cant look up TXT record for IPs
+			}
+
+			logger := log.WithField("endpoint", endpoint)
+
+			records, err := net.LookupTXT(endpoint)
+			if err != nil {
+				var dnsError *net.DNSError
+				if errors.As(err, &dnsError) && dnsError.IsNotFound {
+					logger.WithError(dnsError).Warn("txt_lookup.failed")
+				} else {
+					return nil, fmt.Errorf("failed to lookup TXT records for %v: %w", endpoint, err)
+				}
+			}
+
+			for _, record := range records {
+				i := strings.Index(record, "=")
+				if i < 0 {
+					continue // skip any records that arent key=value formatted
+				}
+				key, value := record[0:i], record[i+1:]
+				switch key {
+				case "wireguardAllowedIps":
+					if peer.AllowedIps == "" {
+						peer.AllowedIps = value
+					}
+				case "wireguardPublicKey":
+					if peer.PublicKey == nil {
+						decoded_value, err := base64.StdEncoding.DecodeString(value)
+						if err != nil {
+							return nil, fmt.Errorf("failed to decode pubkey %v: %w", value, err)
+						}
+						peer.PublicKey = Base64String(decoded_value)
+					}
+				case "heartbeat":
+					if config.Inbound.Heartbeat.URL == "" {
+						config.Inbound.Heartbeat.URL = value
+					}
+				default:
+					logger.WithField("record_key", key).WithField("record_value", value).Warn("txt_lookup.unrecognized_key")
+				}
+			}
+		}
+	}
+
+	// Step 5: Apply default values to any remaining unset config fields
 	defaults.SetDefaults(config)
 
 	if config.Inbound.GitHub != nil {
