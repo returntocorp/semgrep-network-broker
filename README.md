@@ -16,8 +16,10 @@ Examples of inbound traffic include:
 
 ### Build
 
-- Run `make build` to generate the `semgrep-network-broker` binary
-- Run `make docker` to generate a docker image
+NOTE: The Semgrep Network broker uses [Buf](https://buf.build/) for protobuf compilation. If you are building the broker from scratch outside of Docker, make sure you have the Buf CLI installed: https://buf.build/docs/installation
+
+- Run `make build` to build the `semgrep-network-broker` binary locally
+- Run `make docker` to build a docker image
 - Docker images are also published to [ghcr.io/semgrep/semgrep-network-broker](https://github.com/semgrep/semgrep-network-broker/pkgs/container/semgrep-network-broker)
 
 ### Keypairs
