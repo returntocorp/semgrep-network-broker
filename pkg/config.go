@@ -488,7 +488,7 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 				SetRequestHeaders: headers,
 			},
 			AllowlistItem{
-				URL:               gitHubBaseUrl.JoinPath("/repos/:org/:repo/actions/secrets/:secret").String(),
+				URL:               gitHubBaseUrl.JoinPath("/repos/:org/:repo/actions/secrets/SEMGREP_APP_TOKEN").String(),
 				Methods:           ParseHttpMethods([]string{"PUT"}),
 				SetRequestHeaders: headers,
 			},
