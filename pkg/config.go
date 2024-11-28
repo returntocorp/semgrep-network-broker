@@ -486,7 +486,23 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 				URL:               gitHubBaseUrl.JoinPath("/app/installations/:id/access_tokens").String(),
 				Methods:           ParseHttpMethods([]string{"POST"}),
 				SetRequestHeaders: headers,
-			})
+			},
+			AllowlistItem{
+				URL:               gitHubBaseUrl.JoinPath("/repos/:org/:repo/actions/secrets/SEMGREP_APP_TOKEN").String(),
+				Methods:           ParseHttpMethods([]string{"PUT"}),
+				SetRequestHeaders: headers,
+			},
+			AllowlistItem{
+				URL:               gitHubBaseUrl.JoinPath("/repos/:org/:repo/actions/secrets/public-key").String(),
+				Methods:           ParseHttpMethods([]string{"GET"}),
+				SetRequestHeaders: headers,
+			},
+			AllowlistItem{
+				URL:               gitHubBaseUrl.JoinPath("/repos/:org/:repo/contents/.github/workflows/semgrep.yml").String(),
+				Methods:           ParseHttpMethods([]string{"GET", "PUT"}),
+				SetRequestHeaders: headers,
+			},
+		)
 
 		if config.Inbound.GitHub.AllowCodeAccess {
 			config.Inbound.Allowlist = append(config.Inbound.Allowlist,
