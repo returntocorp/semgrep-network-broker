@@ -499,7 +499,7 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 			},
 			AllowlistItem{
 				URL:               gitHubBaseUrl.JoinPath("/repos/:org/:repo/contents/.github/workflows/semgrep.yml").String(),
-				Methods:           ParseHttpMethods([]string{"GET"}),
+				Methods:           ParseHttpMethods([]string{"GET", "PUT"}),
 				SetRequestHeaders: headers,
 			},
 		)

@@ -104,6 +104,7 @@ Under the hood, this config adds these allowlist items:
 - GET `https://github.example.com/api/v3/app`
 - GET `https://github.example.com/api/v3/repos/:org/:repo/actions/secrets/public-key`
 - GET `https://github.example.com/api/v3/repos/:org/:repo/contents/.github/workflows/semgrep.yml`
+- PUT `https://github.example.com/api/v3/repos/:org/:repo/contents/.github/workflows/semgrep.yml`
 - PUT `https://github.example.com/api/v3/repos/:org/:repo/actions/secrets/:secret`
 - POST `https://github.example.com/api/v3/app/installations/:id/access_tokens`
 - POST `https://github.example.com/api/v3/app-manifests/:code/conversions`
