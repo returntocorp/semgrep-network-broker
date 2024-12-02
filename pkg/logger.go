@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -67,4 +68,26 @@ func LoggerWithConfig(logger *log.Logger, notlogged []string) gin.HandlerFunc {
 			requestLogger.WithField("latency", time.Since(start)).WithField("status_code", c.Writer.Status()).WithField("body_size", c.Writer.Size()).Info("request.response")
 		}
 	}
+}
+
+type MetricsHook struct {
+	CounterFunc func(labelValues ...string) (prometheus.Counter, error)
+}
+
+func (mh *MetricsHook) Levels() []log.Level {
+	return log.AllLevels
+}
+
+func (mh *MetricsHook) Fire(entry *log.Entry) error {
+	if metric, err := mh.CounterFunc(entry.Level.String(), entry.Message); err == nil {
+		metric.Inc()
+	}
+	return nil
+}
+
+func init() {
+	h := &MetricsHook{
+		CounterFunc: logEventsCounter.GetMetricWithLabelValues,
+	}
+	log.AddHook(h)
 }

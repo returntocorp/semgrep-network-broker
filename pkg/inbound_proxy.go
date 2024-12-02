@@ -10,8 +10,8 @@ import (
 	"net/url"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
-	ginprometheus "github.com/zsais/go-gin-prometheus"
 	"golang.zx2c4.com/wireguard/tun/netstack"
 	"gopkg.in/dealancer/validate.v2"
 )
@@ -19,6 +19,7 @@ import (
 const errorResponseHeader = "X-Semgrep-Private-Link-Error"
 const proxyResponseHeader = "X-Semgrep-Private-Link"
 const healthcheckPath = "/healthcheck"
+const metricsPath = "/metrics"
 const destinationUrlParam = "destinationUrl"
 const proxyPath = "/proxy/*" + destinationUrlParam
 
@@ -49,9 +50,9 @@ func (config *InboundProxyConfig) Start(tnet *netstack.Net) error {
 	log.WithField("path", healthcheckPath).Info("healthcheck.configured")
 
 	// setup metrics
-	p := ginprometheus.NewPrometheus("gin")
-	p.Use(r)
-	log.WithField("path", p.MetricsPath).Info("metrics.configured")
+	promHandler := promhttp.Handler()
+	r.GET(metricsPath, gin.WrapH(promHandler))
+	log.WithField("path", metricsPath).Info("internal_metrics.configured")
 
 	// setup http proxy
 	r.Any(proxyPath, func(c *gin.Context) {
@@ -80,6 +81,12 @@ func (config *InboundProxyConfig) Start(tnet *netstack.Net) error {
 
 		logger = logger.WithField("allowlist_match", allowlistMatch.URL)
 
+		instrumentedTransport, err := BuildInstrumentedRoundTripper(transport, allowlistMatch.URL)
+		if err != nil {
+			logger.WithError(err).Warn("instrument_roundtripper.error")
+			instrumentedTransport = transport
+		}
+
 		reqLogger := logger
 		if config.Logging.LogRequestBody || allowlistMatch.LogRequestBody {
 			reqBody := &bytes.Buffer{}
@@ -96,7 +103,7 @@ func (config *InboundProxyConfig) Start(tnet *netstack.Net) error {
 		reqLogger.Info("proxy.request")
 
 		proxy := httputil.ReverseProxy{
-			Transport: transport,
+			Transport: instrumentedTransport,
 			Director: func(req *http.Request) {
 				req.URL = destinationUrl
 				req.Host = destinationUrl.Host

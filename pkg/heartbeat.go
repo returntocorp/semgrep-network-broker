@@ -41,6 +41,7 @@ func (config *HeartbeatConfig) Start(tnet *netstack.Net, userAgent string) (func
 			} else {
 				log.WithField("failure_count", failures).WithField("status_code", resp.StatusCode).Warn("heartbeat.failure")
 			}
+			heartbeatFailureCounter.Inc()
 			return false
 		} else {
 			if failures != 0 {
@@ -48,6 +49,8 @@ func (config *HeartbeatConfig) Start(tnet *netstack.Net, userAgent string) (func
 			}
 			log.Debug("heartbeat.success")
 			failures = 0
+			heartbeatSuccessCounter.Inc()
+			heartbeatLastSuccessTimestamp.SetToCurrentTime()
 			return true
 		}
 	}
