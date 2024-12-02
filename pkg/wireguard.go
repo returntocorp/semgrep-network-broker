@@ -9,11 +9,22 @@ import (
 	"net/netip"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"golang.zx2c4.com/wireguard/conn"
 	"golang.zx2c4.com/wireguard/device"
 	"golang.zx2c4.com/wireguard/tun/netstack"
 	"gopkg.in/dealancer/validate.v2"
 )
+
+func newLoggerBridge(verbose bool) *device.Logger {
+	return &device.Logger{Verbosef: func(format string, args ...any) {
+		if verbose {
+			log.WithField("message", fmt.Sprintf(format, args...)).Infof("wireguard.verbose")
+		}
+	}, Errorf: func(format string, args ...any) {
+		log.WithField("message", fmt.Sprintf(format, args...)).Errorf("wireguard.error")
+	}}
+}
 
 func (peer WireguardPeer) Validate() error {
 	if peer.Endpoint == "" {
@@ -110,13 +121,8 @@ func (config *WireguardBase) Start() (*netstack.Net, func() error, error) {
 		return nil, nil, fmt.Errorf("failed to create wireguard tun: %v", err)
 	}
 
-	level := device.LogLevelError
-	if config.Verbose {
-		level = device.LogLevelVerbose
-	}
-
 	// create wireguard device
-	dev := device.NewDevice(tun, conn.NewDefaultBind(), device.NewLogger(level, ""))
+	dev := device.NewDevice(tun, conn.NewDefaultBind(), newLoggerBridge(config.Verbose))
 
 	// apply wireguard configs
 	if err := dev.IpcSet(config.GenerateConfig()); err != nil {
