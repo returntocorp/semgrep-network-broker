@@ -262,9 +262,15 @@ type OutboundProxyConfig struct {
 	ListenPort int                            `mapstructure:"listenPort" json:"listenPort" validate:"gte=0" default:"8080"`
 }
 
+type MetricsConfig struct {
+	Disabled bool   `mapstructure:"disabled" json:"disabled"`
+	Addr     string `mapstructure:"addr" json:"addr" default:":9000"`
+}
+
 type Config struct {
 	Inbound  InboundProxyConfig  `mapstructure:"inbound" json:"inbound"`
 	Outbound OutboundProxyConfig `mapstructure:"outbound" json:"outbound"`
+	Metrics  MetricsConfig       `mapstructure:"metrics" json:"metrics"`
 }
 
 func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {

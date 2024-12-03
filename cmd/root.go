@@ -44,6 +44,11 @@ var rootCmd = &cobra.Command{
 			log.Panic(err)
 		}
 
+		// start metrics
+		if err := pkg.StartMetrics(config); err != nil {
+			log.Panic(fmt.Errorf("failed to start metrics: %w", err))
+		}
+
 		// start the broker
 		teardown, err := StartNetworkBroker(config)
 		if err != nil {
