@@ -14,7 +14,6 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
-	ginprometheus "github.com/zsais/go-gin-prometheus"
 	"gopkg.in/dealancer/validate.v2"
 )
 
@@ -128,10 +127,6 @@ func (config *OutboundProxyConfig) Start() error {
 	// setup healthcheck
 	r.GET(healthcheckPath, func(c *gin.Context) { c.JSON(http.StatusOK, "OK") })
 	log.WithField("path", healthcheckPath).Info("healthcheck.configured")
-
-	// setup metrics
-	p := ginprometheus.NewPrometheus("gin")
-	p.Use(r)
 
 	// setup http proxy
 	r.Any("/relay/:name", func(c *gin.Context) {

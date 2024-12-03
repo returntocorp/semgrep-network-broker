@@ -307,8 +307,6 @@ github.com/whuang8/redactrus v1.0.2/go.mod h1:/QqU95wNV2zWg3nD5/uatl9Uz0cJUROT4S
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
-github.com/zsais/go-gin-prometheus v0.1.0 h1:bkLv1XCdzqVgQ36ScgRi09MA2UC1t3tAB6nsfErsGO4=
-github.com/zsais/go-gin-prometheus v0.1.0/go.mod h1:Slirjzuz8uM8Cw0jmPNqbneoqcUtY2GGjn2bEd4NRLY=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=
 go.opencensus.io v0.22.0/go.mod h1:+kGneAE2xo2IficOXnaByMWTGM9T73dGwxeWcUqIpI8=
 go.opencensus.io v0.22.2/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=

@@ -14,7 +14,6 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/ucarion/urlpath v0.0.0-20200424170820-7ccc79b76bbb
 	github.com/whuang8/redactrus v1.0.2
-	github.com/zsais/go-gin-prometheus v0.1.0
 	golang.zx2c4.com/wireguard v0.0.0-20231010133717-42ec952eadc2
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20230429144221-925a1e7659e6
 	google.golang.org/protobuf v1.35.1
