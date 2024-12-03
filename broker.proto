@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package semgrep.broker.v1;
 
-option go_package = "broker.v1";
-
 message WireguardCredential {
   string local_address = 1; // wireguard interface local address, allocated at broker token creation
   bytes private_key = 2;    // wireguard private key, generated at broker token creation
