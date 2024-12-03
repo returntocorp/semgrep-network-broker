@@ -2,8 +2,10 @@ package pkg
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -47,7 +49,31 @@ func StartMetrics(config *Config) error {
 	prometheus.MustRegister(logEventsCounter, heartbeatCounter, heartbeatLastSuccessTimestamp, proxyInFlightGauge, proxyCounter)
 
 	promHandler := promhttp.Handler()
-	httpServer := &http.Server{Addr: config.Metrics.Addr, Handler: promHandler}
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promHandler)
+	mux.HandleFunc("/probes/startup", func(w http.ResponseWriter, r *http.Request) {
+		if hasSeenSuccessfulHeartbeat {
+			w.WriteHeader(200)
+			io.WriteString(w, "OK")
+		} else {
+			w.WriteHeader(503)
+			io.WriteString(w, "Not Ready")
+		}
+	})
+	mux.HandleFunc("/probes/readiness", func(w http.ResponseWriter, r *http.Request) {
+		timeSinceLastHeartbeat := time.Since(lastSuccessfulHeartbeat)
+		heartbeatCutoff := time.Second * time.Duration(config.Inbound.Heartbeat.IntervalSeconds+config.Metrics.HealthcheckGracePeriodSeconds)
+
+		if timeSinceLastHeartbeat < heartbeatCutoff {
+			w.WriteHeader(200)
+			io.WriteString(w, "OK")
+		} else {
+			w.WriteHeader(503)
+			io.WriteString(w, fmt.Sprintf("Not Ready: no successful heartbeat within %v", heartbeatCutoff))
+		}
+	})
+
+	httpServer := &http.Server{Addr: config.Metrics.Addr, Handler: mux}
 	listener, err := net.Listen("tcp", httpServer.Addr)
 	if err != nil {
 		return fmt.Errorf("failed to start external metrics server: %w", err)
