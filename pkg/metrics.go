@@ -12,11 +12,12 @@ import (
 
 var logEventsCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
 	Name: "network_broker_log_events_total",
-	Help: "Counter of log events",
+	Help: "Total number of log events",
 }, []string{"level", "event"})
 
 var heartbeatCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
 	Name: "network_broker_heartbeat_total",
+	Help: "Total number of heartbeat attempts",
 }, []string{"result"})
 
 var heartbeatSuccessCounter = heartbeatCounter.WithLabelValues("success")
@@ -24,14 +25,17 @@ var heartbeatFailureCounter = heartbeatCounter.WithLabelValues("failure")
 
 var heartbeatLastSuccessTimestamp = prometheus.NewGauge(prometheus.GaugeOpts{
 	Name: "network_broker_heartbeat_last_success_timestamp_seconds",
+	Help: "Timestamp of last successful heartbeat attempt in seconds",
 }) // TODO: refactor heartbeat.go to be per-endpoint, and then include peer_endpoint as a label
 
 var proxyInFlightGauge = prometheus.NewGauge(prometheus.GaugeOpts{
 	Name: "network_broker_proxy_in_flight_requests",
+	Help: "Number of in-flight proxy requests",
 })
 
 var proxyCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
 	Name: "network_broker_proxy_requests_total",
+	Help: " Total number of proxy requests",
 }, []string{"allowlist", "method", "code"})
 
 func StartMetrics(config *Config) error {
@@ -46,7 +50,7 @@ func StartMetrics(config *Config) error {
 	httpServer := &http.Server{Addr: fmt.Sprintf(":%d", config.Metrics.Port), Handler: promHandler}
 	listener, err := net.Listen("tcp", httpServer.Addr)
 	if err != nil {
-		return fmt.Errorf("failed to start metrics server: %w", err)
+		return fmt.Errorf("failed to start external metrics server: %w", err)
 	}
 	go httpServer.Serve(listener)
 	log.WithField("port", config.Metrics.Port).Info("external_metrics.started")
