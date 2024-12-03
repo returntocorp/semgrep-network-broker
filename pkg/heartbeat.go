@@ -9,6 +9,9 @@ import (
 	"golang.zx2c4.com/wireguard/tun/netstack"
 )
 
+var hasSeenSuccessfulHeartbeat bool
+var lastSuccessfulHeartbeat time.Time
+
 func (config *HeartbeatConfig) Start(tnet *netstack.Net, userAgent string) (func(), error) {
 	ticker := time.NewTicker(time.Duration(config.IntervalSeconds) * time.Second)
 	done := make(chan bool)
@@ -51,6 +54,8 @@ func (config *HeartbeatConfig) Start(tnet *netstack.Net, userAgent string) (func
 			failures = 0
 			heartbeatSuccessCounter.Inc()
 			heartbeatLastSuccessTimestamp.SetToCurrentTime()
+			hasSeenSuccessfulHeartbeat = true
+			lastSuccessfulHeartbeat = time.Now()
 			return true
 		}
 	}
