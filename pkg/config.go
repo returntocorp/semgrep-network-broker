@@ -263,8 +263,8 @@ type OutboundProxyConfig struct {
 }
 
 type MetricsConfig struct {
-	Disabled bool `mapstructure:"disabled" json:"disabled"`
-	Port     int  `mapstructure:"port" json:"port" validate:"gte=0" default:"9000"`
+	Disabled bool   `mapstructure:"disabled" json:"disabled"`
+	Addr     string `mapstructure:"addr" json:"addr" default:":9000"`
 }
 
 type Config struct {

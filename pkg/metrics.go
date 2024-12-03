@@ -40,20 +40,20 @@ var proxyCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
 
 func StartMetrics(config *Config) error {
 	if config.Metrics.Disabled {
-		log.WithField("port", config.Metrics.Port).Info("external_metrics.disabled")
+		log.WithField("addr", config.Metrics.Addr).Info("external_metrics.disabled")
 		return nil
 	}
 
 	prometheus.MustRegister(logEventsCounter, heartbeatCounter, heartbeatLastSuccessTimestamp, proxyInFlightGauge, proxyCounter)
 
 	promHandler := promhttp.Handler()
-	httpServer := &http.Server{Addr: fmt.Sprintf(":%d", config.Metrics.Port), Handler: promHandler}
+	httpServer := &http.Server{Addr: config.Metrics.Addr, Handler: promHandler}
 	listener, err := net.Listen("tcp", httpServer.Addr)
 	if err != nil {
 		return fmt.Errorf("failed to start external metrics server: %w", err)
 	}
 	go httpServer.Serve(listener)
-	log.WithField("port", config.Metrics.Port).Info("external_metrics.started")
+	log.WithField("addr", config.Metrics.Addr).Info("external_metrics.started")
 
 	return nil
 }
