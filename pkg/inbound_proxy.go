@@ -83,7 +83,7 @@ func (config *InboundProxyConfig) Start(tnet *netstack.Net) error {
 
 		instrumentedTransport, err := BuildInstrumentedRoundTripper(transport, allowlistMatch.URL)
 		if err != nil {
-			logger.WithError(err).Warn("instrument_roundtripper.error")
+			logger.WithError(err).Warn("roundtripper.instrument_error")
 			instrumentedTransport = transport
 		}
 
