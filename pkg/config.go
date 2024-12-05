@@ -225,9 +225,9 @@ type BitBucket struct {
 }
 
 type AzureDevOps struct {
-	BaseURL string `mapstructure:"baseUrl" json:"baseUrl"`
-	Token   string `mapstructure:"token" json:"token"`
-	AllowCodeAccess bool `mapstructure:"allowCodeAccess" json:"allowCodeAccess"`
+	BaseURL         string `mapstructure:"baseUrl" json:"baseUrl"`
+	Token           string `mapstructure:"token" json:"token"`
+	AllowCodeAccess bool   `mapstructure:"allowCodeAccess" json:"allowCodeAccess"`
 }
 
 type HttpClientConfig struct {
@@ -741,7 +741,6 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 				Methods:           ParseHttpMethods([]string{"POST"}),
 				SetRequestHeaders: headers,
 			},
-
 		)
 	}
 
@@ -758,7 +757,6 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse azure devops vsaex base URL: %v", err)
 		}
-
 
 		var headers map[string]string
 		if azureDevOps.Token != "" {
@@ -831,8 +829,8 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 			},
 			// list teams
 			AllowlistItem{
-				URL:  		   vsaexUrl.JoinPath("/:namespace/_apis/groupentitlements").String(),
-				Methods:       ParseHttpMethods([]string{"GET"}),
+				URL:               vsaexUrl.JoinPath("/:namespace/_apis/groupentitlements").String(),
+				Methods:           ParseHttpMethods([]string{"GET"}),
 				SetRequestHeaders: headers,
 			},
 		)
