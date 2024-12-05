@@ -196,7 +196,7 @@ inbound:
     - url: http://example.com/api/v3/repos/:owner/:repo/pulls/:number/comments
       methods: [GET]
       setRequestHeaders:
-        Authorization: 'Bearer ...snip...'
+        Authorization: "Bearer ...snip..."
 ```
 
 ### Real-world example
@@ -208,19 +208,19 @@ allowlist:
   - url: https://git.example.com/api/v3/repos/:owner/:repo
     methods: [GET]
     setRequestHeaders:
-      Authorization: 'Bearer <GH TOKEN>'
+      Authorization: "Bearer <GH TOKEN>"
   - url: https://git.example.com/api/v3/repos/:owner/:repo/pulls
     methods: [GET]
     setRequestHeaders:
-      Authorization: 'Bearer <GH TOKEN>'
+      Authorization: "Bearer <GH TOKEN>"
   - url: https://git.example.com/api/v3/repos/:owner/:repo/pulls/:number/comments
     methods: [POST]
     setRequestHeaders:
-      Authorization: 'Bearer <GH TOKEN>'
+      Authorization: "Bearer <GH TOKEN>"
   - url: https://git.example.com/api/v3/repos/:owner/:repo/issues/:number/comments
     methods: [POST]
     setRequestHeaders:
-      Authorization: 'Bearer <GH TOKEN>'
+      Authorization: "Bearer <GH TOKEN>"
 ```
 
 ### Logging
@@ -294,7 +294,7 @@ outbound:
   relay:
     test:
       destinationUrl: https://httpbin.org/anything
-      jsonPath: '$.foo'
+      jsonPath: "$.foo"
       equals:
         - bar
 ```
@@ -311,7 +311,7 @@ outbound:
   relay:
     test:
       destinationUrl: https://httpbin.org/anything
-      jsonPath: '$.foo'
+      jsonPath: "$.foo"
       equals:
         - bar
       additionalConfigs:
