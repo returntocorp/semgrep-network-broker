@@ -224,6 +224,12 @@ type BitBucket struct {
 	Token   string `mapstructure:"token" json:"token"`
 }
 
+type AzureDevOps struct {
+	BaseURL string `mapstructure:"baseUrl" json:"baseUrl"`
+	Token   string `mapstructure:"token" json:"token"`
+	AllowCodeAccess bool `mapstructure:"allowCodeAccess" json:"allowCodeAccess"`
+}
+
 type HttpClientConfig struct {
 	AdditionalCACerts []string `mapstructure:"additionalCACerts" json:"additionalCACerts"`
 }
@@ -237,6 +243,7 @@ type InboundProxyConfig struct {
 	GitHub          *GitHub          `mapstructure:"github" json:"github"`
 	GitLab          *GitLab          `mapstructure:"gitlab" json:"gitlab"`
 	BitBucket       *BitBucket       `mapstructure:"bitbucket" json:"bitbucket"`
+	AzureDevOps     *AzureDevOps     `mapstructure:"azuredevops" json:"azuredevops"`
 	HttpClient      HttpClientConfig `mapstructure:"httpClient" json:"httpClient"`
 }
 
@@ -734,7 +741,118 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 				Methods:           ParseHttpMethods([]string{"POST"}),
 				SetRequestHeaders: headers,
 			},
+
 		)
+	}
+
+	if config.Inbound.AzureDevOps != nil {
+		azureDevOps := config.Inbound.AzureDevOps
+
+		azureDevOpsBaseUrl, err := url.Parse(azureDevOps.BaseURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse azure devops base URL: %v", err)
+		}
+
+		vsaexBaseUrl := strings.Replace(azureDevOps.BaseURL, "dev.azure.com", "vsaex.dev.azure.com", 1)
+		vsaexUrl, err := url.Parse(vsaexBaseUrl)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse azure devops vsaex base URL: %v", err)
+		}
+
+
+		var headers map[string]string
+		if azureDevOps.Token != "" {
+			headers = map[string]string{
+				"Authorization": fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(azureDevOps.Token))),
+			}
+		} else {
+			headers = map[string]string{}
+		}
+
+		config.Inbound.Allowlist = append(config.Inbound.Allowlist,
+			// Check organization access
+			AllowlistItem{
+				URL:               azureDevOpsBaseUrl.JoinPath("/:namespace/_apis/connectionData").String(),
+				Methods:           ParseHttpMethods([]string{"GET"}),
+				SetRequestHeaders: headers,
+			},
+			// Namespace info
+			AllowlistItem{
+				URL:               azureDevOpsBaseUrl.JoinPath("/:namespace/_apis/projects/:project").String(),
+				Methods:           ParseHttpMethods([]string{"GET"}),
+				SetRequestHeaders: headers,
+			},
+			// get repos
+			AllowlistItem{
+				URL:               azureDevOpsBaseUrl.JoinPath("/:namespace/:project/_apis/git/repositories").String(),
+				Methods:           ParseHttpMethods([]string{"GET"}),
+				SetRequestHeaders: headers,
+			},
+			// repo info
+			AllowlistItem{
+				URL:               azureDevOpsBaseUrl.JoinPath("/:namespace/:project/_apis/git/repositories/:repo").String(),
+				Methods:           ParseHttpMethods([]string{"GET"}),
+				SetRequestHeaders: headers,
+			},
+			// PR info
+			AllowlistItem{
+				URL:               azureDevOpsBaseUrl.JoinPath("/:namespace/:project/_apis/git/repositories/:repo/pullRequests").String(),
+				Methods:           ParseHttpMethods([]string{"GET"}),
+				SetRequestHeaders: headers,
+			},
+			// get pull request iterations
+			AllowlistItem{
+				URL:               azureDevOpsBaseUrl.JoinPath("/:namespace/:project/_apis/git/repositories/:repo/pullRequests/:number/iterations").String(),
+				Methods:           ParseHttpMethods([]string{"GET"}),
+				SetRequestHeaders: headers,
+			},
+			// post and update PR comment
+			AllowlistItem{
+				URL:               azureDevOpsBaseUrl.JoinPath("/:namespace/:project/_apis/git/repositories/:repo/pullRequests/:number/threads").String(),
+				Methods:           ParseHttpMethods([]string{"POST", "PATCH"}),
+				SetRequestHeaders: headers,
+			},
+			// post and update PR comment reply
+			AllowlistItem{
+				URL:               azureDevOpsBaseUrl.JoinPath("/:namespace/:project/_apis/git/repositories/:repo/pullRequests/:number/threads/:threadId/comments").String(),
+				Methods:           ParseHttpMethods([]string{"POST"}),
+				SetRequestHeaders: headers,
+			},
+			AllowlistItem{
+				URL:               azureDevOpsBaseUrl.JoinPath("/:namespace/:project/_apis/git/repositories/:repo/pullRequests/:number/threads/:threadId/comments/:commentId").String(),
+				Methods:           ParseHttpMethods([]string{"PATCH"}),
+				SetRequestHeaders: headers,
+			},
+			// namespace webhooks
+			AllowlistItem{
+				URL:               azureDevOpsBaseUrl.JoinPath("/:namespace/:project/_apis/hooks/subscriptions").String(),
+				Methods:           ParseHttpMethods([]string{"GET", "POST", "PUT"}),
+				SetRequestHeaders: headers,	
+			},
+			// list teams
+			AllowlistItem{
+				URL:  		   vsaexUrl.JoinPath("/:namespace/_apis/groupentitlements").String(),
+				Methods:       ParseHttpMethods([]string{"GET"}),
+				SetRequestHeaders: headers,
+			},
+		)
+
+		if config.Inbound.AzureDevOps.AllowCodeAccess {
+			config.Inbound.Allowlist = append(config.Inbound.Allowlist,
+				// get file content 
+				AllowlistItem{
+					URL:               azureDevOpsBaseUrl.JoinPath("/:namespace/:project/_apis/git/repositories/:repo/items").String(),
+					Methods:           ParseHttpMethods([]string{"GET"}),
+					SetRequestHeaders: headers,
+				},
+				// update commit status
+				AllowlistItem{
+					URL:               azureDevOpsBaseUrl.JoinPath("/:namespace/:project/_apis/git/repositories/:repo/commits/:commit/statuses").String(),	
+					Methods:           ParseHttpMethods([]string{"POST"}),
+					SetRequestHeaders: headers,
+				},
+			)
+		}
 	}
 
 	return config, nil

@@ -179,6 +179,40 @@ Under the hood, this config adds these allowlist items:
 - POST `https://bitbucket.example.com/rest/api/latest/projects/:project/repos/:repo/pull-requests/:number/comments`
 - POST `https://bitbucket.example.com/rest/api/latest/projects/:project/repos/:repo/pull-requests/:number/blocker-comments`
 
+### AzureDevops
+
+Similarly, the `azuredevops` configuration section grants Semgrep access to azure devops.
+
+```yaml
+inbound:
+  bitbucket:
+    baseUrl: https://example@dev.azure.com/
+    token: ...
+    allowCodeAccess: false # default is false, set to true to allow Semgrep to read file contents
+```
+
+Under the hood, this config adds these allowlist items:
+
+- GET `https://example@dev.azure.com/:namespace/_apis/connectionData`
+- GET `https://example@dev.azure.com/:namespace/_apis/projects/:project`
+- GET `https://example@dev.azure.com/:namespace/:project/_apis/git/repositories`
+- GET `https://example@dev.azure.com/:namespace/:project/_apis/git/repositories/:repo`
+- GET `https://example@dev.azure.com/:namespace/:project/_apis/git/repositories/:repo/pullRequests`
+- GET `https://example@dev.azure.com/:namespace/:project/_apis/git/repositories/:repo/pullRequests/:number/iterations`
+- POST `https://example@dev.azure.com/:namespace/:project/_apis/git/repositories/:repo/pullRequests/:number/threads`
+- PATCH `https://example@dev.azure.com/:namespace/:project/_apis/git/repositories/:repo/pullRequests/:number/threads`
+- POST `https://example@dev.azure.com/:namespace/:project/_apis/git/repositories/:repo/pullRequests/:number/threads/:threadId/comments`
+- PATCH `https://example@dev.azure.com/:namespace/:project/_apis/git/repositories/:repo/pullRequests/:number/threads/:threadId/comments/:commentId`
+- GET `https://example@dev.azure.com/:namespace/:project/_apis/hooks/subscriptions`
+- POST `https://example@dev.azure.com/:namespace/:project/_apis/hooks/subscriptions`
+- PUT `https://example@dev.azure.com/:namespace/:project/_apis/hooks/subscriptions`
+- GET `https://example@vsaex.dev.azure.com/:namespace/_apis/groupentitlements`
+
+And if `allowCodeAccess` is set, additionally:
+
+- GET `https://example@dev.azure.com/:namespace/:project/_apis/git/repositories/:repo/items`
+- POST `https://example@dev.azure.com/:namespace/:project/_apis/git/repositories/:repo/commits/:commit/statuses`
+
 ### Allowlist
 
 The `allowlist` configuration section provides finer-grained control over what HTTP requests are allowed to be forwarded out of the broker. The first matching allowlist item is used. No allowlist match means the request will not be proxied.
