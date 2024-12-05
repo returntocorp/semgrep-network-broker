@@ -827,7 +827,7 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 			AllowlistItem{
 				URL:               azureDevOpsBaseUrl.JoinPath("/:namespace/:project/_apis/hooks/subscriptions").String(),
 				Methods:           ParseHttpMethods([]string{"GET", "POST", "PUT"}),
-				SetRequestHeaders: headers,	
+				SetRequestHeaders: headers,
 			},
 			// list teams
 			AllowlistItem{
@@ -839,7 +839,7 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 
 		if config.Inbound.AzureDevOps.AllowCodeAccess {
 			config.Inbound.Allowlist = append(config.Inbound.Allowlist,
-				// get file content 
+				// get file content
 				AllowlistItem{
 					URL:               azureDevOpsBaseUrl.JoinPath("/:namespace/:project/_apis/git/repositories/:repo/items").String(),
 					Methods:           ParseHttpMethods([]string{"GET"}),
@@ -847,7 +847,7 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 				},
 				// update commit status
 				AllowlistItem{
-					URL:               azureDevOpsBaseUrl.JoinPath("/:namespace/:project/_apis/git/repositories/:repo/commits/:commit/statuses").String(),	
+					URL:               azureDevOpsBaseUrl.JoinPath("/:namespace/:project/_apis/git/repositories/:repo/commits/:commit/statuses").String(),
 					Methods:           ParseHttpMethods([]string{"POST"}),
 					SetRequestHeaders: headers,
 				},
