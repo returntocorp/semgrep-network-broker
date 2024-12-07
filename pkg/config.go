@@ -220,8 +220,9 @@ type GitLab struct {
 }
 
 type BitBucket struct {
-	BaseURL string `mapstructure:"baseUrl" json:"baseUrl"`
-	Token   string `mapstructure:"token" json:"token"`
+	BaseURL         string `mapstructure:"baseUrl" json:"baseUrl"`
+	Token           string `mapstructure:"token" json:"token"`
+	AllowCodeAccess bool   `mapstructure:"allowCodeAccess" json:"allowCodeAccess"`
 }
 
 type AzureDevOps struct {
@@ -747,13 +748,48 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 				Methods:           ParseHttpMethods([]string{"POST"}),
 				SetRequestHeaders: headers,
 			},
+			// get and update PR comment
+			AllowlistItem{
+				URL:               bitBucketBaseUrl.JoinPath("/projects/:project/repos/:repo/pull-requests/:number/comments/:comment").String(),
+				Methods:           ParseHttpMethods([]string{"GET", "PUT"}),
+				SetRequestHeaders: headers,
+			},
 			// post blockerPR comment
 			AllowlistItem{
 				URL:               bitBucketBaseUrl.JoinPath("/projects/:project/repos/:repo/pull-requests/:number/blocker-comments").String(),
 				Methods:           ParseHttpMethods([]string{"POST"}),
 				SetRequestHeaders: headers,
 			},
+			// namespace webhooks
+			AllowlistItem{
+				URL:               bitBucketBaseUrl.JoinPath("/projects/:project/webhooks").String(),
+				Methods:           ParseHttpMethods([]string{"GET", "POST"}),
+				SetRequestHeaders: headers,
+			},
+			AllowlistItem{
+				URL:               bitBucketBaseUrl.JoinPath("/projects/:project/webhooks/:webhook").String(),
+				Methods:           ParseHttpMethods([]string{"PUT", "DELETE"}),
+				SetRequestHeaders: headers,
+			},
 		)
+
+		if config.Inbound.BitBucket.AllowCodeAccess {
+			// get contents of file
+			config.Inbound.Allowlist = append(config.Inbound.Allowlist,
+				AllowlistItem{
+					URL:               bitBucketBaseUrl.JoinPath("/projects/:project/repos/:repo/browse/:filepath").String(),
+					Methods:           ParseHttpMethods([]string{"GET"}),
+					SetRequestHeaders: headers,
+				},
+				// update commit status
+				AllowlistItem{
+					URL:               bitBucketBaseUrl.JoinPath("/projects/:project/repos/:repo/commit/:commit/builds").String(),
+					Methods:           ParseHttpMethods([]string{"POST"}),
+					SetRequestHeaders: headers,
+				},
+			)
+
+		}
 	}
 
 	if config.Inbound.AzureDevOps != nil {

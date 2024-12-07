@@ -170,6 +170,7 @@ inbound:
   bitbucket:
     baseUrl: https://bitbucket.example.com/rest/api/latest
     token: ...
+    allowCodeAccess: false # default is false, set to true to allow Semgrep to read file contents
 ```
 
 Under the hood, this config adds these allowlist items:
@@ -180,7 +181,19 @@ Under the hood, this config adds these allowlist items:
 - GET `https://bitbucket.example.com/rest/api/latest/projects/:project/repos/:repo/default-branch`
 - GET `https://bitbucket.example.com/rest/api/latest/projects/:project/:repo/pull-requests`
 - POST `https://bitbucket.example.com/rest/api/latest/projects/:project/repos/:repo/pull-requests/:number/comments`
+- GET `https://bitbucket.example.com/rest/api/latest/projects/:project/repos/:repo/pull-requests/:number/comments/:comment`
+- PUT `https://bitbucket.example.com/rest/api/latest/projects/:project/repos/:repo/pull-requests/:number/comments/:comment`
 - POST `https://bitbucket.example.com/rest/api/latest/projects/:project/repos/:repo/pull-requests/:number/blocker-comments`
+- GET `https://bitbucket.example.com/rest/api/latest/projects/:project/webhooks`
+- POST `https://bitbucket.example.com/rest/api/latest/projects/:project/webhooks`
+- PUT `https://bitbucket.example.com/rest/api/latest/projects/:project/webhooks/:webhook`
+- DELETE `https://bitbucket.example.com/rest/api/latest/projects/:project/webhooks/:webhook`
+
+And if `allowCodeAccess` is set, additionally:
+
+- GET `https://bitbucket.example.com/rest/api/latest/projects/:project/repos/:repo/browse/:filepath`
+- POST `https://bitbucket.example.com/rest/api/latest/projects/:project/repos/:repo/commit/:commit/builds`
+
 
 ### AzureDevops
 
