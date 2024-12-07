@@ -138,12 +138,14 @@ Under the hood, this config adds these allowlist items:
 - GET `https://gitlab.example.com/api/v4/namespaces/:namespace`
 - GET `https://gitlab.example.com/api/v4/projects/:project`
 - GET `https://gitlab.example.com/api/v4/projects/:project/members/all/:user`
+- GET `https://gitlab.example.com/api/v4/groups/:namespace/members/all/:user`
 - GET `https://gitlab.example.com/api/v4/projects/:project/merge_requests`
 - GET `https://gitlab.example.com/api/v4/projects/:project/merge_requests/:number/versions`
 - GET `https://gitlab.example.com/api/v4/projects/:project/merge_requests/:number/discussions`
 - GET `https://gitlab.example.com/api/v4/projects/:project/merge_requests/:number/discussions/:discussion/notes/:note/award_emoji`
 - GET `https://gitlab.example.com/api/v4/projects/:project/repository/branches`
 - GET `https://gitlab.example.com/api/v4/:entity_type/:namespace/projects`
+- PUT `https://gitlab.example.com/api/v4/groups/:namespace/hooks`
 - POST `https://gitlab.example.com/api/v4/groups/:namespace/hooks`
 - POST `https://gitlab.example.com/api/v4/projects/:project/hooks`
 - POST `https://gitlab.example.com/api/v4/projects/:project/merge_requests/:number/discussions`
@@ -157,6 +159,7 @@ And if `allowCodeAccess` is set, additionally:
 - GET `https://gitlab.example.com/api/v4/projects/:project/repository/commits`
 - GET `https://gitlab.example.com/api/v4/projects/:project/repository/compare`
 - POST `https://gitlab.example.com/api/v4/projects/:project/statuses/:commit`
+- GET `https://gitlab.example.com/api/v4/personal_access_tokens/self`
 
 ### Bitbucket
 

@@ -550,7 +550,7 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 			// Group webhooks
 			AllowlistItem{
 				URL:               gitLabBaseUrl.JoinPath("/groups/:namespace/hooks").String(),
-				Methods:           ParseHttpMethods([]string{"GET", "POST"}),
+				Methods:           ParseHttpMethods([]string{"GET", "POST", "PUT"}),
 				SetRequestHeaders: headers,
 			},
 			AllowlistItem{
@@ -560,7 +560,7 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 			},
 			// Group info
 			AllowlistItem{
-				URL:               gitLabBaseUrl.JoinPath("/namespaces/:namespace").String(),
+				URL:               gitLabBaseUrl.JoinPath("/groups/:namespace").String(),
 				Methods:           ParseHttpMethods([]string{"GET"}),
 				SetRequestHeaders: headers,
 			},
@@ -579,6 +579,12 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 			AllowlistItem{
 				URL:               gitLabBaseUrl.JoinPath("/projects/:project/hooks/:hook").String(),
 				Methods:           ParseHttpMethods([]string{"DELETE"}),
+				SetRequestHeaders: headers,
+			},
+			// Get a group member
+			AllowlistItem{
+				URL:               gitLabBaseUrl.JoinPath("/groups/:namespace/members/all/:user").String(),
+				Methods:           ParseHttpMethods([]string{"GET"}),
 				SetRequestHeaders: headers,
 			},
 			// Get a repo member
@@ -638,6 +644,12 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 			// Get reactions to comments
 			AllowlistItem{
 				URL:               gitLabBaseUrl.JoinPath("/projects/:project/merge_requests/:number/discussions/:discussion/notes/:note/award_emoji").String(),
+				Methods:           ParseHttpMethods([]string{"GET"}),
+				SetRequestHeaders: headers,
+			},
+			// Get scm token info
+			AllowlistItem{
+				URL:               gitLabBaseUrl.JoinPath("/personal_access_tokens/self").String(),
 				Methods:           ParseHttpMethods([]string{"GET"}),
 				SetRequestHeaders: headers,
 			},
