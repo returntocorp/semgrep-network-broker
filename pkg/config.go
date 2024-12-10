@@ -247,7 +247,7 @@ func (config *InboundProxyConfig) validateGitHubGraphQLRequest(body []byte, filt
 }
 
 type GitHubGraphQLFilter struct {
-	AllowedOperations map[string][]string `validate:"omitempty"` // map[operationType][]operationName
+	AllowedOperations map[string][]string `validate:"required"` // map[operationType][]operationName
 }
 type AllowlistItem struct {
 	URL                   string               `mapstructure:"url" json:"url"`
@@ -258,7 +258,7 @@ type AllowlistItem struct {
 	LogRequestHeaders     bool                 `mapstructure:"logRequestHeaders" json:"logRequestHeaders"`
 	LogResponseBody       bool                 `mapstructure:"logResponseBody" json:"logResponseBody"`
 	LogResponseHeaders    bool                 `mapstructure:"logResponseHeaders" json:"logResponseHeaders"`
-	GitHubGraphQL         *GitHubGraphQLFilter `validate:"omitempty"`
+	GitHubGraphQL         *GitHubGraphQLFilter `mapstructure:"githubGraphQL" json:"githubGraphQL"`
 }
 
 type Allowlist []AllowlistItem
