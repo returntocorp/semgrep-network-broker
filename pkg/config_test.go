@@ -156,9 +156,9 @@ func TestGitHubGraphQLValidation(t *testing.T) {
 		{
 			name: "valid query operation",
 			request: githubGraphQLRequest{
-				Query: `query GetRepository { 
-                    repository(owner: "owner", name: "name") { 
-                        id 
+				Query: `query GetRepository {
+                    repository(owner: "owner", name: "name") {
+                        id
                     }
                 }`,
 				OperationName: "GetRepository",
@@ -168,9 +168,9 @@ func TestGitHubGraphQLValidation(t *testing.T) {
 		{
 			name: "valid query operation no operation name",
 			request: githubGraphQLRequest{
-				Query: `query GetRepository { 
-                    repository(owner: "owner", name: "name") { 
-                        id 
+				Query: `query GetRepository {
+                    repository(owner: "owner", name: "name") {
+                        id
                     }
                 }`,
 			},
@@ -179,9 +179,9 @@ func TestGitHubGraphQLValidation(t *testing.T) {
 		{
 			name: "valid mutation operation",
 			request: githubGraphQLRequest{
-				Query: `mutation CreateIssue { 
-                    createIssue(input: {repositoryId: "123", title: "title"}) { 
-                        issue { id } 
+				Query: `mutation CreateIssue {
+                    createIssue(input: {repositoryId: "123", title: "title"}) {
+                        issue { id }
                     }
                 }`,
 				OperationName: "CreateIssue",
@@ -191,9 +191,9 @@ func TestGitHubGraphQLValidation(t *testing.T) {
 		{
 			name: "operation not in allowlist",
 			request: githubGraphQLRequest{
-				Query: `query GetUser { 
-                    user(login: "username") { 
-                        id 
+				Query: `query GetUser {
+                    user(login: "username") {
+                        id
                     }
                 }`,
 				OperationName: "GetUser",
@@ -204,9 +204,9 @@ func TestGitHubGraphQLValidation(t *testing.T) {
 		{
 			name: "operation type not allowed",
 			request: githubGraphQLRequest{
-				Query: `subscription WatchRepository { 
-                    repository { 
-                        id 
+				Query: `subscription WatchRepository {
+                    repository {
+                        id
                     }
                 }`,
 				OperationName: "WatchRepository",
@@ -217,9 +217,9 @@ func TestGitHubGraphQLValidation(t *testing.T) {
 		{
 			name: "unnamed operation",
 			request: githubGraphQLRequest{
-				Query: `query { 
-                    repository(owner: "owner", name: "name") { 
-                        id 
+				Query: `query {
+                    repository(owner: "owner", name: "name") {
+                        id
                     }
                 }`,
 			},
@@ -229,9 +229,9 @@ func TestGitHubGraphQLValidation(t *testing.T) {
 		{
 			name: "operation name mismatch",
 			request: githubGraphQLRequest{
-				Query: `query GetRepository { 
-                    repository(owner: "owner", name: "name") { 
-                        id 
+				Query: `query GetRepository {
+                    repository(owner: "owner", name: "name") {
+                        id
                     }
                 }`,
 				OperationName: "DifferentName",
@@ -242,9 +242,9 @@ func TestGitHubGraphQLValidation(t *testing.T) {
 		{
 			name: "invalid GraphQL syntax",
 			request: githubGraphQLRequest{
-				Query: `query GetRepository { 
-                    repository(owner: "owner", name: "name") { 
-                        id 
+				Query: `query GetRepository {
+                    repository(owner: "owner", name: "name") {
+                        id
                     `, // Missing closing brace
 				OperationName: "GetRepository",
 			},
@@ -280,9 +280,9 @@ func TestGitHubGraphQLValidation(t *testing.T) {
 func TestGitHubGraphQLValidationWithNilFilter(t *testing.T) {
 	config := &InboundProxyConfig{}
 	request := githubGraphQLRequest{
-		Query: `query GetRepository { 
-            repository(owner: "owner", name: "name") { 
-                id 
+		Query: `query GetRepository {
+            repository(owner: "owner", name: "name") {
+                id
             }
         }`,
 		OperationName: "GetRepository",
