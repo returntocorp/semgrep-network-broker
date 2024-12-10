@@ -13,6 +13,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/graphql-go/graphql/language/ast"
+	"github.com/graphql-go/graphql/language/parser"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/mcuadros/go-defaults"
@@ -178,15 +180,85 @@ func httpMethodsDecodeHook(f reflect.Type, t reflect.Type, data interface{}) (in
 	return ParseHttpMethods(methods), nil
 }
 
+type githubGraphQLRequest struct {
+	Query         string                 `json:"query"`
+	OperationName string                 `json:"operationName,omitempty"`
+	Variables     map[string]interface{} `json:"variables,omitempty"`
+}
+
+func (config *InboundProxyConfig) validateGitHubGraphQLRequest(body []byte, filter *GitHubGraphQLFilter) error {
+	if filter == nil {
+		return nil
+	}
+
+	var req githubGraphQLRequest
+	if err := json.Unmarshal(body, &req); err != nil {
+		return fmt.Errorf("invalid GitHub GraphQL request JSON: %v", err)
+	}
+
+	doc, err := parser.Parse(parser.ParseParams{
+		Source: req.Query,
+	})
+	if err != nil {
+		return fmt.Errorf("graphql query is unparseable: %v", err)
+	}
+
+	// GitHub GraphQL requests typically have a single operation
+	var foundOperation *ast.OperationDefinition
+	for _, def := range doc.Definitions {
+		if opDef, ok := def.(*ast.OperationDefinition); ok {
+			foundOperation = opDef
+			break
+		}
+	}
+
+	if foundOperation == nil {
+		return fmt.Errorf("no GraphQL operation found")
+	}
+
+	opType := string(foundOperation.Operation)
+	opName := ""
+	if foundOperation.Name != nil {
+		opName = foundOperation.Name.Value
+	}
+
+	// If operation name is provided in the request, it must match the query
+	if req.OperationName != "" && opName != req.OperationName {
+		return fmt.Errorf("operation name mismatch between request and query")
+	}
+
+	// Validate against allowed operations
+	allowedOps, exists := filter.AllowedOperations[opType]
+	if !exists {
+		return fmt.Errorf("GitHub GraphQL operation type '%s' not allowed", opType)
+	}
+
+	if opName == "" {
+		return fmt.Errorf("GitHub GraphQL operations must be named")
+	}
+
+	for _, allowedOp := range allowedOps {
+		if allowedOp == opName {
+			return nil // Operation is allowed
+		}
+	}
+
+	return fmt.Errorf("GitHub GraphQL %s operation '%s' not allowed", opType, opName)
+}
+
+type GitHubGraphQLFilter struct {
+	AllowedOperations map[string][]string `validate:"omitempty"` // map[operationType][]operationName
+}
 type AllowlistItem struct {
-	URL                   string            `mapstructure:"url" json:"url"`
-	Methods               HttpMethods       `mapstructure:"methods" json:"methods"`
-	SetRequestHeaders     map[string]string `mapstructure:"setRequestHeaders" json:"setRequestHeaders"`
-	RemoveResponseHeaders []string          `mapstructure:"removeResponseHeaders" json:"removeRequestHeaders"`
-	LogRequestBody        bool              `mapstructure:"logRequestBody" json:"logRequestBody"`
-	LogRequestHeaders     bool              `mapstructure:"logRequestHeaders" json:"logRequestHeaders"`
-	LogResponseBody       bool              `mapstructure:"logResponseBody" json:"logResponseBody"`
-	LogResponseHeaders    bool              `mapstructure:"logResponseHeaders" json:"logResponseHeaders"`
+	URL                   string               `mapstructure:"url" json:"url"`
+	Methods               HttpMethods          `mapstructure:"methods" json:"methods"`
+	SetRequestHeaders     map[string]string    `mapstructure:"setRequestHeaders" json:"setRequestHeaders"`
+	RemoveResponseHeaders []string             `mapstructure:"removeResponseHeaders" json:"removeRequestHeaders"`
+	LogRequestBody        bool                 `mapstructure:"logRequestBody" json:"logRequestBody"`
+	LogRequestHeaders     bool                 `mapstructure:"logRequestHeaders" json:"logRequestHeaders"`
+	LogResponseBody       bool                 `mapstructure:"logResponseBody" json:"logResponseBody"`
+	LogResponseHeaders    bool                 `mapstructure:"logResponseHeaders" json:"logResponseHeaders"`
+	GitHubGraphQL         *GitHubGraphQLFilter `validate:"omitempty"`
 }
 
 type Allowlist []AllowlistItem
@@ -517,10 +589,22 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 				Methods:           ParseHttpMethods([]string{"GET", "PUT"}),
 				SetRequestHeaders: headers,
 			},
+			// Graphql API with specific operations
 			AllowlistItem{
 				URL:               gitHubBaseUrl.JoinPath("/graphql").String(),
 				Methods:           ParseHttpMethods([]string{"POST"}),
 				SetRequestHeaders: headers,
+				GitHubGraphQL: &GitHubGraphQLFilter{
+					AllowedOperations: map[string][]string{
+						"query": {
+							"GetBlameDetails",
+						},
+						"mutation": {
+							"resolveReviewThread",
+							"unresolveReviewThread",
+						},
+					},
+				},
 			},
 		)
 

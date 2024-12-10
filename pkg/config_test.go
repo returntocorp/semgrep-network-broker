@@ -2,8 +2,10 @@ package pkg
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/mitchellh/mapstructure"
@@ -133,5 +135,166 @@ func TestHttpMethodsDecodeHook(t *testing.T) {
 
 	if output.Methods != HttpMethods(expected) {
 		t.Error(fmt.Errorf("No match: %+v != %+v", output.Methods, expected))
+	}
+}
+
+func TestGitHubGraphQLValidation(t *testing.T) {
+	config := &InboundProxyConfig{}
+	filter := &GitHubGraphQLFilter{
+		AllowedOperations: map[string][]string{
+			"query":    {"GetRepository", "GetPullRequest"},
+			"mutation": {"CreateIssue"},
+		},
+	}
+
+	tests := []struct {
+		name        string
+		request     githubGraphQLRequest
+		shouldError bool
+		errorMsg    string
+	}{
+		{
+			name: "valid query operation",
+			request: githubGraphQLRequest{
+				Query: `query GetRepository { 
+                    repository(owner: "owner", name: "name") { 
+                        id 
+                    }
+                }`,
+				OperationName: "GetRepository",
+			},
+			shouldError: false,
+		},
+		{
+			name: "valid query operation no operation name",
+			request: githubGraphQLRequest{
+				Query: `query GetRepository { 
+                    repository(owner: "owner", name: "name") { 
+                        id 
+                    }
+                }`,
+			},
+			shouldError: false,
+		},
+		{
+			name: "valid mutation operation",
+			request: githubGraphQLRequest{
+				Query: `mutation CreateIssue { 
+                    createIssue(input: {repositoryId: "123", title: "title"}) { 
+                        issue { id } 
+                    }
+                }`,
+				OperationName: "CreateIssue",
+			},
+			shouldError: false,
+		},
+		{
+			name: "operation not in allowlist",
+			request: githubGraphQLRequest{
+				Query: `query GetUser { 
+                    user(login: "username") { 
+                        id 
+                    }
+                }`,
+				OperationName: "GetUser",
+			},
+			shouldError: true,
+			errorMsg:    "GitHub GraphQL query operation 'GetUser' not allowed",
+		},
+		{
+			name: "operation type not allowed",
+			request: githubGraphQLRequest{
+				Query: `subscription WatchRepository { 
+                    repository { 
+                        id 
+                    }
+                }`,
+				OperationName: "WatchRepository",
+			},
+			shouldError: true,
+			errorMsg:    "GitHub GraphQL operation type 'subscription' not allowed",
+		},
+		{
+			name: "unnamed operation",
+			request: githubGraphQLRequest{
+				Query: `query { 
+                    repository(owner: "owner", name: "name") { 
+                        id 
+                    }
+                }`,
+			},
+			shouldError: true,
+			errorMsg:    "GitHub GraphQL operations must be named",
+		},
+		{
+			name: "operation name mismatch",
+			request: githubGraphQLRequest{
+				Query: `query GetRepository { 
+                    repository(owner: "owner", name: "name") { 
+                        id 
+                    }
+                }`,
+				OperationName: "DifferentName",
+			},
+			shouldError: true,
+			errorMsg:    "operation name mismatch between request and query",
+		},
+		{
+			name: "invalid GraphQL syntax",
+			request: githubGraphQLRequest{
+				Query: `query GetRepository { 
+                    repository(owner: "owner", name: "name") { 
+                        id 
+                    `, // Missing closing brace
+				OperationName: "GetRepository",
+			},
+			shouldError: true,
+			errorMsg:    "graphql query is unparseable",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			requestBody, err := json.Marshal(tt.request)
+			if err != nil {
+				t.Fatalf("failed to marshal request: %v", err)
+			}
+
+			err = config.validateGitHubGraphQLRequest(requestBody, filter)
+
+			if tt.shouldError {
+				if err == nil {
+					t.Error("expected error but got none")
+				} else if !strings.Contains(err.Error(), tt.errorMsg) {
+					t.Errorf("expected error containing %q but got %q", tt.errorMsg, err.Error())
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+			}
+		})
+	}
+}
+
+func TestGitHubGraphQLValidationWithNilFilter(t *testing.T) {
+	config := &InboundProxyConfig{}
+	request := githubGraphQLRequest{
+		Query: `query GetRepository { 
+            repository(owner: "owner", name: "name") { 
+                id 
+            }
+        }`,
+		OperationName: "GetRepository",
+	}
+
+	requestBody, err := json.Marshal(request)
+	if err != nil {
+		t.Fatalf("failed to marshal request: %v", err)
+	}
+
+	err = config.validateGitHubGraphQLRequest(requestBody, nil)
+	if err != nil {
+		t.Errorf("expected no error with nil filter but got: %v", err)
 	}
 }
