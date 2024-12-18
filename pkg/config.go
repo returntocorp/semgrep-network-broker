@@ -492,6 +492,10 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse github base URL: %v", err)
 		}
+		gitHubBaseUrlGraphQL, err := url.Parse(strings.Replace(gitHub.BaseURL, "/api/v3", "/api/graphql", 1))
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse github GraphQL base URL: %v", err)
+		}
 
 		var headers map[string]string
 		if gitHub.Token != "" {
@@ -591,7 +595,7 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 			},
 			// Graphql API with specific operations
 			AllowlistItem{
-				URL:               gitHubBaseUrl.JoinPath("/graphql").String(),
+				URL:               gitHubBaseUrlGraphQL.String(),
 				Methods:           ParseHttpMethods([]string{"POST"}),
 				SetRequestHeaders: headers,
 				GraphQLData: &GraphQLFilter{
