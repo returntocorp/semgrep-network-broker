@@ -138,9 +138,9 @@ func TestHttpMethodsDecodeHook(t *testing.T) {
 	}
 }
 
-func TestGitHubGraphQLValidation(t *testing.T) {
+func TestGraphQLValidation(t *testing.T) {
 	config := &InboundProxyConfig{}
-	filter := &GitHubGraphQLFilter{
+	filter := &GraphQLFilter{
 		AllowedOperations: map[string][]string{
 			"query":    {"GetRepository", "GetPullRequest"},
 			"mutation": {"CreateIssue"},
@@ -149,13 +149,13 @@ func TestGitHubGraphQLValidation(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		request     githubGraphQLRequest
+		request     graphQlRequest
 		shouldError bool
 		errorMsg    string
 	}{
 		{
 			name: "valid query operation",
-			request: githubGraphQLRequest{
+			request: graphQlRequest{
 				Query: `query GetRepository {
                     repository(owner: "owner", name: "name") {
                         id
@@ -167,7 +167,7 @@ func TestGitHubGraphQLValidation(t *testing.T) {
 		},
 		{
 			name: "valid query operation no operation name",
-			request: githubGraphQLRequest{
+			request: graphQlRequest{
 				Query: `query GetRepository {
                     repository(owner: "owner", name: "name") {
                         id
@@ -178,7 +178,7 @@ func TestGitHubGraphQLValidation(t *testing.T) {
 		},
 		{
 			name: "valid mutation operation",
-			request: githubGraphQLRequest{
+			request: graphQlRequest{
 				Query: `mutation CreateIssue {
                     createIssue(input: {repositoryId: "123", title: "title"}) {
                         issue { id }
@@ -190,7 +190,7 @@ func TestGitHubGraphQLValidation(t *testing.T) {
 		},
 		{
 			name: "operation not in allowlist",
-			request: githubGraphQLRequest{
+			request: graphQlRequest{
 				Query: `query GetUser {
                     user(login: "username") {
                         id
@@ -203,7 +203,7 @@ func TestGitHubGraphQLValidation(t *testing.T) {
 		},
 		{
 			name: "operation type not allowed",
-			request: githubGraphQLRequest{
+			request: graphQlRequest{
 				Query: `subscription WatchRepository {
                     repository {
                         id
@@ -216,7 +216,7 @@ func TestGitHubGraphQLValidation(t *testing.T) {
 		},
 		{
 			name: "unnamed operation",
-			request: githubGraphQLRequest{
+			request: graphQlRequest{
 				Query: `query {
                     repository(owner: "owner", name: "name") {
                         id
@@ -228,7 +228,7 @@ func TestGitHubGraphQLValidation(t *testing.T) {
 		},
 		{
 			name: "operation name mismatch",
-			request: githubGraphQLRequest{
+			request: graphQlRequest{
 				Query: `query GetRepository {
                     repository(owner: "owner", name: "name") {
                         id
@@ -241,7 +241,7 @@ func TestGitHubGraphQLValidation(t *testing.T) {
 		},
 		{
 			name: "invalid GraphQL syntax",
-			request: githubGraphQLRequest{
+			request: graphQlRequest{
 				Query: `query GetRepository {
                     repository(owner: "owner", name: "name") {
                         id
@@ -260,7 +260,7 @@ func TestGitHubGraphQLValidation(t *testing.T) {
 				t.Fatalf("failed to marshal request: %v", err)
 			}
 
-			err = config.validateGitHubGraphQLRequest(requestBody, filter)
+			err = config.validateGraphQLRequest(requestBody, filter)
 
 			if tt.shouldError {
 				if err == nil {
@@ -277,9 +277,9 @@ func TestGitHubGraphQLValidation(t *testing.T) {
 	}
 }
 
-func TestGitHubGraphQLValidationWithNilFilter(t *testing.T) {
+func TestGraphQLValidationWithNilFilter(t *testing.T) {
 	config := &InboundProxyConfig{}
-	request := githubGraphQLRequest{
+	request := graphQlRequest{
 		Query: `query GetRepository {
             repository(owner: "owner", name: "name") {
                 id
@@ -293,7 +293,7 @@ func TestGitHubGraphQLValidationWithNilFilter(t *testing.T) {
 		t.Fatalf("failed to marshal request: %v", err)
 	}
 
-	err = config.validateGitHubGraphQLRequest(requestBody, nil)
+	err = config.validateGraphQLRequest(requestBody, nil)
 	if err != nil {
 		t.Errorf("expected no error with nil filter but got: %v", err)
 	}

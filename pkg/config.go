@@ -180,18 +180,18 @@ func httpMethodsDecodeHook(f reflect.Type, t reflect.Type, data interface{}) (in
 	return ParseHttpMethods(methods), nil
 }
 
-type githubGraphQLRequest struct {
+type graphQlRequest struct {
 	Query         string                 `json:"query"`
 	OperationName string                 `json:"operationName,omitempty"`
 	Variables     map[string]interface{} `json:"variables,omitempty"`
 }
 
-func (config *InboundProxyConfig) validateGitHubGraphQLRequest(body []byte, filter *GitHubGraphQLFilter) error {
+func (config *InboundProxyConfig) validateGraphQLRequest(body []byte, filter *GraphQLFilter) error {
 	if filter == nil {
 		return nil
 	}
 
-	var req githubGraphQLRequest
+	var req graphQlRequest
 	if err := json.Unmarshal(body, &req); err != nil {
 		return fmt.Errorf("invalid GitHub GraphQL request JSON: %v", err)
 	}
@@ -246,19 +246,19 @@ func (config *InboundProxyConfig) validateGitHubGraphQLRequest(body []byte, filt
 	return fmt.Errorf("GitHub GraphQL %s operation '%s' not allowed", opType, opName)
 }
 
-type GitHubGraphQLFilter struct {
+type GraphQLFilter struct {
 	AllowedOperations map[string][]string `validate:"required"` // map[operationType][]operationName
 }
 type AllowlistItem struct {
-	URL                   string               `mapstructure:"url" json:"url"`
-	Methods               HttpMethods          `mapstructure:"methods" json:"methods"`
-	SetRequestHeaders     map[string]string    `mapstructure:"setRequestHeaders" json:"setRequestHeaders"`
-	RemoveResponseHeaders []string             `mapstructure:"removeResponseHeaders" json:"removeRequestHeaders"`
-	LogRequestBody        bool                 `mapstructure:"logRequestBody" json:"logRequestBody"`
-	LogRequestHeaders     bool                 `mapstructure:"logRequestHeaders" json:"logRequestHeaders"`
-	LogResponseBody       bool                 `mapstructure:"logResponseBody" json:"logResponseBody"`
-	LogResponseHeaders    bool                 `mapstructure:"logResponseHeaders" json:"logResponseHeaders"`
-	GitHubGraphQL         *GitHubGraphQLFilter `mapstructure:"githubGraphQL" json:"githubGraphQL"`
+	URL                   string            `mapstructure:"url" json:"url"`
+	Methods               HttpMethods       `mapstructure:"methods" json:"methods"`
+	SetRequestHeaders     map[string]string `mapstructure:"setRequestHeaders" json:"setRequestHeaders"`
+	RemoveResponseHeaders []string          `mapstructure:"removeResponseHeaders" json:"removeRequestHeaders"`
+	LogRequestBody        bool              `mapstructure:"logRequestBody" json:"logRequestBody"`
+	LogRequestHeaders     bool              `mapstructure:"logRequestHeaders" json:"logRequestHeaders"`
+	LogResponseBody       bool              `mapstructure:"logResponseBody" json:"logResponseBody"`
+	LogResponseHeaders    bool              `mapstructure:"logResponseHeaders" json:"logResponseHeaders"`
+	GraphQLData           *GraphQLFilter    `mapstructure:"githubGraphQL" json:"githubGraphQL"`
 }
 
 type Allowlist []AllowlistItem
@@ -594,7 +594,7 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 				URL:               gitHubBaseUrl.JoinPath("/graphql").String(),
 				Methods:           ParseHttpMethods([]string{"POST"}),
 				SetRequestHeaders: headers,
-				GitHubGraphQL: &GitHubGraphQLFilter{
+				GraphQLData: &GraphQLFilter{
 					AllowedOperations: map[string][]string{
 						"query": {
 							"GetBlameDetails",

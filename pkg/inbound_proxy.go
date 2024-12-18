@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -81,9 +80,8 @@ func (config *InboundProxyConfig) Start(tnet *netstack.Net) error {
 		}
 
 		// Just to make sure validate all three of these things before checking
-		if allowlistMatch.GitHubGraphQL != nil &&
-			c.Request.Method == "POST" &&
-			strings.HasSuffix(destinationUrl.Path, "/graphql") {
+		if allowlistMatch.GraphQLData != nil &&
+			c.Request.Method == "POST" {
 
 			bodyBytes, err := io.ReadAll(c.Request.Body)
 			if err != nil {
@@ -95,7 +93,7 @@ func (config *InboundProxyConfig) Start(tnet *netstack.Net) error {
 			// Restore the body for later use
 			c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
-			if err := config.validateGitHubGraphQLRequest(bodyBytes, allowlistMatch.GitHubGraphQL); err != nil {
+			if err := config.validateGraphQLRequest(bodyBytes, allowlistMatch.GraphQLData); err != nil {
 				logger.WithError(err).Warn("github_graphql.validation_error")
 				c.Header(errorResponseHeader, "1")
 				c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
