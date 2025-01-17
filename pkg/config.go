@@ -13,6 +13,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/graphql-go/graphql/language/ast"
+	"github.com/graphql-go/graphql/language/parser"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/mcuadros/go-defaults"
@@ -178,6 +180,75 @@ func httpMethodsDecodeHook(f reflect.Type, t reflect.Type, data interface{}) (in
 	return ParseHttpMethods(methods), nil
 }
 
+type graphQlRequest struct {
+	Query         string                 `json:"query"`
+	OperationName string                 `json:"operationName,omitempty"`
+	Variables     map[string]interface{} `json:"variables,omitempty"`
+}
+
+func (config *InboundProxyConfig) validateGraphQLRequest(body []byte, filter *GraphQLFilter) error {
+	if filter == nil {
+		return nil
+	}
+
+	var req graphQlRequest
+	if err := json.Unmarshal(body, &req); err != nil {
+		return fmt.Errorf("invalid GitHub GraphQL request JSON: %v", err)
+	}
+
+	doc, err := parser.Parse(parser.ParseParams{
+		Source: req.Query,
+	})
+	if err != nil {
+		return fmt.Errorf("graphql query is unparseable: %v", err)
+	}
+
+	// GitHub GraphQL requests typically have a single operation
+	var foundOperation *ast.OperationDefinition
+	for _, def := range doc.Definitions {
+		if opDef, ok := def.(*ast.OperationDefinition); ok {
+			foundOperation = opDef
+			break
+		}
+	}
+
+	if foundOperation == nil {
+		return fmt.Errorf("no GraphQL operation found")
+	}
+
+	opType := string(foundOperation.Operation)
+	opName := ""
+	if foundOperation.Name != nil {
+		opName = foundOperation.Name.Value
+	}
+
+	// If operation name is provided in the request, it must match the query
+	if req.OperationName != "" && opName != req.OperationName {
+		return fmt.Errorf("operation name mismatch between request and query")
+	}
+
+	// Validate against allowed operations
+	allowedOps, exists := filter.AllowedOperations[opType]
+	if !exists {
+		return fmt.Errorf("GitHub GraphQL operation type '%s' not allowed", opType)
+	}
+
+	if opName == "" {
+		return fmt.Errorf("GitHub GraphQL operations must be named")
+	}
+
+	for _, allowedOp := range allowedOps {
+		if allowedOp == opName {
+			return nil // Operation is allowed
+		}
+	}
+
+	return fmt.Errorf("GitHub GraphQL %s operation '%s' not allowed", opType, opName)
+}
+
+type GraphQLFilter struct {
+	AllowedOperations map[string][]string `validate:"required"` // map[operationType][]operationName
+}
 type AllowlistItem struct {
 	URL                   string            `mapstructure:"url" json:"url"`
 	Methods               HttpMethods       `mapstructure:"methods" json:"methods"`
@@ -187,6 +258,7 @@ type AllowlistItem struct {
 	LogRequestHeaders     bool              `mapstructure:"logRequestHeaders" json:"logRequestHeaders"`
 	LogResponseBody       bool              `mapstructure:"logResponseBody" json:"logResponseBody"`
 	LogResponseHeaders    bool              `mapstructure:"logResponseHeaders" json:"logResponseHeaders"`
+	GraphQLData           *GraphQLFilter    `mapstructure:"githubGraphQL" json:"githubGraphQL"`
 }
 
 type Allowlist []AllowlistItem
@@ -420,6 +492,10 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse github base URL: %v", err)
 		}
+		gitHubBaseUrlGraphQL, err := url.Parse(strings.Replace(gitHub.BaseURL, "/api/v3", "/api/graphql", 1))
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse github GraphQL base URL: %v", err)
+		}
 
 		var headers map[string]string
 		if gitHub.Token != "" {
@@ -516,6 +592,23 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 				URL:               gitHubBaseUrl.JoinPath("/repos/:org/:repo/contents/.github/workflows/semgrep.yml").String(),
 				Methods:           ParseHttpMethods([]string{"GET", "PUT"}),
 				SetRequestHeaders: headers,
+			},
+			// Graphql API with specific operations
+			AllowlistItem{
+				URL:               gitHubBaseUrlGraphQL.String(),
+				Methods:           ParseHttpMethods([]string{"POST"}),
+				SetRequestHeaders: headers,
+				GraphQLData: &GraphQLFilter{
+					AllowedOperations: map[string][]string{
+						"query": {
+							"GetBlameDetails",
+						},
+						"mutation": {
+							"resolveReviewThread",
+							"unresolveReviewThread",
+						},
+					},
+				},
 			},
 		)
 

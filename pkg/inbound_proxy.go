@@ -79,6 +79,28 @@ func (config *InboundProxyConfig) Start(tnet *netstack.Net) error {
 			return
 		}
 
+		// Just to make sure validate all three of these things before checking
+		if allowlistMatch.GraphQLData != nil &&
+			c.Request.Method == "POST" {
+
+			bodyBytes, err := io.ReadAll(c.Request.Body)
+			if err != nil {
+				logger.WithError(err).Warn("github_graphql.read_body_error")
+				c.Header(errorResponseHeader, "1")
+				c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read request body"})
+				return
+			}
+			// Restore the body for later use
+			c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+			if err := config.validateGraphQLRequest(bodyBytes, allowlistMatch.GraphQLData); err != nil {
+				logger.WithError(err).Warn("github_graphql.validation_error")
+				c.Header(errorResponseHeader, "1")
+				c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+				return
+			}
+		}
+
 		logger = logger.WithField("allowlist_match", allowlistMatch.URL)
 
 		instrumentedTransport, err := BuildInstrumentedRoundTripper(transport, allowlistMatch.URL)
