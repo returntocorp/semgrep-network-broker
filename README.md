@@ -113,7 +113,7 @@ Under the hood, this config adds these allowlist items:
 
 And if `allowCodeAccess` is set, additionally:
 
-- GET `https://github.example.com/api/v3/repos/:repo/contents/:filepath`
+- GET `https://github.example.com/api/v3/repos/:repo/contents/*`
 - GET `https://github.example.com/api/v3/repos/:repo/commits`
 
 ### GitLab
@@ -155,7 +155,7 @@ Under the hood, this config adds these allowlist items:
 
 And if `allowCodeAccess` is set, additionally:
 
-- GET `https://gitlab.example.com/api/v4/projects/:project/repository/files/:filepath`
+- GET `https://gitlab.example.com/api/v4/projects/:project/repository/files/*`
 - GET `https://gitlab.example.com/api/v4/projects/:project/repository/commits`
 - GET `https://gitlab.example.com/api/v4/projects/:project/repository/compare`
 - POST `https://gitlab.example.com/api/v4/projects/:project/statuses/:commit`
@@ -191,7 +191,7 @@ Under the hood, this config adds these allowlist items:
 
 And if `allowCodeAccess` is set, additionally:
 
-- GET `https://bitbucket.example.com/rest/api/latest/projects/:project/repos/:repo/browse/:filepath`
+- GET `https://bitbucket.example.com/rest/api/latest/projects/:project/repos/:repo/browse/*`
 - POST `https://bitbucket.example.com/rest/api/latest/projects/:project/repos/:repo/commit/:commit/builds`
 
 
