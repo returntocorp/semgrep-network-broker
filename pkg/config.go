@@ -523,7 +523,7 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 			config.Inbound.Allowlist = append(config.Inbound.Allowlist,
 				// get contents of file
 				AllowlistItem{
-					URL:               gitHubBaseUrl.JoinPath("/repos/:repo/contents/:filepath").String(),
+					URL:               gitHubBaseUrl.JoinPath("/repos/:repo/contents/*").String(),
 					Methods:           ParseHttpMethods([]string{"GET"}),
 					SetRequestHeaders: headers,
 				},
@@ -667,7 +667,7 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 			config.Inbound.Allowlist = append(config.Inbound.Allowlist,
 				// get contents of file
 				AllowlistItem{
-					URL:               gitLabBaseUrl.JoinPath("/projects/:project/repository/files/:filepath").String(),
+					URL:               gitLabBaseUrl.JoinPath("/projects/:project/repository/files/*").String(),
 					Methods:           ParseHttpMethods([]string{"GET"}),
 					SetRequestHeaders: headers,
 				},
@@ -777,7 +777,7 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 			// get contents of file
 			config.Inbound.Allowlist = append(config.Inbound.Allowlist,
 				AllowlistItem{
-					URL:               bitBucketBaseUrl.JoinPath("/projects/:project/repos/:repo/browse/:filepath").String(),
+					URL:               bitBucketBaseUrl.JoinPath("/projects/:project/repos/:repo/browse/*").String(),
 					Methods:           ParseHttpMethods([]string{"GET"}),
 					SetRequestHeaders: headers,
 				},
