@@ -113,8 +113,8 @@ Under the hood, this config adds these allowlist items:
 
 And if `allowCodeAccess` is set, additionally:
 
-- GET `https://github.example.com/api/v3/repos/:repo/contents/*`
-- GET `https://github.example.com/api/v3/repos/:repo/commits`
+- GET `https://github.example.com/api/v3/repos/:org/:repo/contents/*`
+- GET `https://github.example.com/api/v3/repos/:org/:repo/commits`
 
 ### GitLab
 
