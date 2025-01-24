@@ -523,13 +523,13 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 			config.Inbound.Allowlist = append(config.Inbound.Allowlist,
 				// get contents of file
 				AllowlistItem{
-					URL:               gitHubBaseUrl.JoinPath("/repos/:repo/contents/*").String(),
+					URL:               gitHubBaseUrl.JoinPath("/repos/:org/:repo/contents/*").String(),
 					Methods:           ParseHttpMethods([]string{"GET"}),
 					SetRequestHeaders: headers,
 				},
 				// Commits
 				AllowlistItem{
-					URL:               gitHubBaseUrl.JoinPath("/repos/:repo/commits").String(),
+					URL:               gitHubBaseUrl.JoinPath("/repos/:org/:repo/commits").String(),
 					Methods:           ParseHttpMethods([]string{"GET"}),
 					SetRequestHeaders: headers,
 				},
