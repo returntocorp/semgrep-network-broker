@@ -22,6 +22,7 @@ import (
 
 const SemgrepHostnameEnvVar = "SEMGREP_HOSTNAME"
 const DefaultSemgrepHostname = "semgrep.dev"
+const SemgrepWireguardPeerFormat = "wireguard.%s:51820"
 
 func getSemgrepHostname() string {
 	hostname := os.Getenv(SemgrepHostnameEnvVar)
@@ -301,7 +302,7 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 	// Step 0: Set default wireguard peer
 	config.Inbound.Wireguard.Peers = []WireguardPeer{
 		{
-			Endpoint: fmt.Sprintf("wireguard.%s:51820", hostname),
+			Endpoint: fmt.Sprintf(SemgrepWireguardPeerFormat, hostname),
 		},
 	}
 
