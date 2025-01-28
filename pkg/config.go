@@ -20,6 +20,17 @@ import (
 	"github.com/spf13/viper"
 )
 
+const SemgrepHostnameEnvVar = "SEMGREP_HOSTNAME"
+const DefaultSemgrepHostname = "semgrep.dev"
+
+func getSemgrepHostname() string {
+	hostname := os.Getenv(SemgrepHostnameEnvVar)
+	if hostname == "" {
+		hostname = DefaultSemgrepHostname
+	}
+	return hostname
+}
+
 type Base64String []byte
 
 func (bs Base64String) MarshalJSON() ([]byte, error) {
@@ -283,7 +294,16 @@ type Config struct {
 }
 
 func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
+	hostname := getSemgrepHostname()
+
 	config := new(Config)
+
+	// Step 0: Set default wireguard peer
+	config.Inbound.Wireguard.Peers = []WireguardPeer{
+		{
+			Endpoint: fmt.Sprintf("wireguard.%s:51820", hostname),
+		},
+	}
 
 	// Step 1: Apply config values encoded in broker token (if provided)
 	tokenString, err := LoadTokenFromEnv()
@@ -304,10 +324,6 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 	// Step 2: Apply config values from semgrep.dev/api/broker/{deployment_id}/default-config, if a deployment ID is provided
 	// NOTE: we will be phasing this out in favor of retrieving default configs from the broker gateway
 	if deploymentId > 0 {
-		hostname := os.Getenv("SEMGREP_HOSTNAME")
-		if hostname == "" {
-			hostname = "semgrep.dev"
-		}
 		url := url.URL{
 			Scheme: "https",
 			Host:   hostname,
