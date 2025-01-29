@@ -583,9 +583,9 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 				Methods:           ParseHttpMethods([]string{"DELETE"}),
 				SetRequestHeaders: headers,
 			},
-			// Group info
+			// Namespace info
 			AllowlistItem{
-				URL:               gitLabBaseUrl.JoinPath("/groups/:namespace").String(),
+				URL:               gitLabBaseUrl.JoinPath("/namespaces/:namespace").String(),
 				Methods:           ParseHttpMethods([]string{"GET"}),
 				SetRequestHeaders: headers,
 			},
