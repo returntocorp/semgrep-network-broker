@@ -589,12 +589,6 @@ func LoadConfig(configFiles []string, deploymentId int) (*Config, error) {
 				Methods:           ParseHttpMethods([]string{"GET"}),
 				SetRequestHeaders: headers,
 			},
-			// Group info
-			AllowlistItem{
-				URL:               gitLabBaseUrl.JoinPath("/groups/:namespace").String(),
-				Methods:           ParseHttpMethods([]string{"GET"}),
-				SetRequestHeaders: headers,
-			},
 			// repo info
 			AllowlistItem{
 				URL:               gitLabBaseUrl.JoinPath("/projects/:project").String(),
