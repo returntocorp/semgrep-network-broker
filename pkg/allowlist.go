@@ -12,13 +12,16 @@ func (config AllowlistItem) Matches(method string, url *url.URL) bool {
 		return false
 	}
 
-	parsedUrl, _ := url.Parse(config.URL)
+	parsedUrl, err := url.Parse(config.URL)
+	if err != nil {
+		return false
+	}
 
 	if parsedUrl.Scheme != url.Scheme || parsedUrl.Host != url.Host {
 		return false
 	}
 
-	matcher := urlpath.New(parsedUrl.Path)
+	matcher := urlpath.New(parsedUrl.EscapedPath())
 	if _, matches := matcher.Match(url.EscapedPath()); matches {
 		return true
 	}
