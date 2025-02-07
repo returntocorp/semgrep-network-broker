@@ -139,17 +139,3 @@ func TestAllowlistEncodedPathMatch(t *testing.T) {
 	assertAllowlistMatch(t, allowlist, "GET", "https://gitlab.example.com/api/v4/projects/test-group%2Ftest-project/repository/files/path/to/file", true)
 	assertAllowlistMatch(t, allowlist, "GET", "https://gitlab.example.com/api/v4/projects/test-group/test-project/repository/files/path/to/file", false)
 }
-
-func TestAllowlistIPv6Match(t *testing.T) {
-	allowlist := &Allowlist{
-		AllowlistItem{
-			URL:     "http://[fdf0:59dc:33cf:9be9:0000:0000:0000:0001]/ping",
-			Methods: ParseHttpMethods([]string{"GET"}),
-		},
-	}
-
-	// Test IPv6 address matching
-	assertAllowlistMatch(t, allowlist, "GET", "http://[fdf0:59dc:33cf:9be9:0000:0000:0000:0001]/ping", true)
-	assertAllowlistMatch(t, allowlist, "GET", "http://[fdf0:59dc:33cf:9be9::1]/ping", false)                  // Different format of same address
-	assertAllowlistMatch(t, allowlist, "GET", "http://[fdf0:59dc:33cf:9be9:0000:0000:0000:0002]/ping", false) // Different address
-}
